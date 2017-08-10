@@ -5,8 +5,11 @@ import json
 import urllib2
 import time
 import errno
+import base64
 
 ttl = 60
+username = 'your_auth_user'
+password = 'your_auth_pass'
 
 stats = {
     'cluster': 'http://localhost:9200/_cluster/stats',
@@ -38,6 +41,12 @@ def get_cache(api):
             d = urllib2.urlopen(stats[api]).read()
             with open(cache, 'w') as f: f.write(d)
         except Exception as e:
+            if e.code == 401:
+                auth = urllib2.Request(stats[api])
+                base64string = base64.b64encode('%s:%s' % (username, password))
+                auth.add_header("Authorization", "Basic %s" % base64string)
+                d = urllib2.urlopen(auth).read()
+                with open(cache, 'w') as f: f.write(d)
             pass        
         if os.path.exists(lock):
             os.remove(lock)
